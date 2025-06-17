@@ -12,7 +12,28 @@ const {
 } = require('../models');
 
 const { Op } = require('sequelize');
-const { getVip,getBalance,addLevelIncome} = require("../services/userService");
+const { getVip,getBalance,addLevelIncome,getPercentage} = require("../services/userService");
+
+
+
+const get_vip = async (req, res) => { 
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(200).json({success: false, message: "User not authenticated!" });
+      }  
+      const user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+        return res.status(200).json({success: false, message: "User not found!" });
+      } 
+      const vip = await getVip(userId);
+    
+      return res.status(200).json({success: true, vip: vip});
+    } catch (error) {
+      console.error("Something went wrong:", error);
+      return res.status(200).json({success: false, message: "Internal Server Error" });
+    }
+  };
 
 
 
@@ -328,7 +349,10 @@ const tradeOnJson = async (req, res) => {
     if (!user) {
       return res.status(200).json({ success: false, message: "User Not Found" });
     }
-    const fetchcontract = await Contract.findAll({where:{user_id: userId}});
+    const fetchcontract = await Contract.findAll({
+      where: { user_id: userId },
+      order: [['id', 'DESC']], // or 'createdAt', if available
+    });
     return res.status(200).json({ success: true, fetchcontract: fetchcontract});
  
   } catch (err) {
@@ -381,4 +405,4 @@ const tradecount = async (req, res) => {
     // });
     //        }
     //      }
-module.exports = { tradeOnJson,stopTrade, tradecount,fetchcontract};
+module.exports = { tradeOnJson,stopTrade, tradecount,fetchcontract,get_vip};

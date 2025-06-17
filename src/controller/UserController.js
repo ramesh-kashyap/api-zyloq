@@ -43,6 +43,9 @@ const available_balance = async (req, res) => {
     try {
       const userId = req.user?.id;
   
+      const startOfDay = moment().startOf('day').toDate();
+      const endOfDay = moment().endOf('day').toDate();
+
       if (!userId) {
         return res.status(200).json({success: false, message: "User not authenticated!" });
       }
@@ -50,21 +53,27 @@ const available_balance = async (req, res) => {
           where: { user_id: userId, remarks: "Team Commission" },
        });
         const todayTeamIncome = await Income.sum('comm', {
-          where: { user_id: userId, remarks: "Team Commission",ttime: moment().format('YYYY-MM-DD') },
+          where: { user_id: userId, remarks: "Team Commission", ttime: {
+      [Op.between]: [startOfDay, endOfDay],
+    } },
        });
 
         const totalIncome = await Income.sum('comm', {
           where: { user_id: userId},
        });
         const todayTotalIncome = await Income.sum('comm', {
-          where: { user_id: userId,ttime: moment().format('YYYY-MM-DD') },
+          where: { user_id: userId, ttime: {
+      [Op.between]: [startOfDay, endOfDay],
+    }},
        });
 
         const tradingIncome = await Income.sum('comm', {
           where: { user_id: userId, remarks: "Order Revenue" },
        });
         const todayTradingIncome = await Income.sum('comm', {
-          where: { user_id: userId, remarks: "Order Revenue",ttime: moment().format('YYYY-MM-DD') },
+          where: { user_id: userId, remarks: "Order Revenue", ttime: {
+      [Op.between]: [startOfDay, endOfDay],
+    }},
        });
 
        const response = {

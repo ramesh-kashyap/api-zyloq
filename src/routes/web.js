@@ -33,6 +33,7 @@ router.post('/process-withdrawal', authMiddleware, UserController.processWithdra
 
 
 router.get('/tradeOn', authMiddleware,tradeController.tradeOnJson);
+router.get('/get_vip', authMiddleware,tradeController.get_vip);
 router.get('/close-trade', authMiddleware,tradeController.stopTrade);
 router.get('/fetchtrade', authMiddleware, tradeController.tradecount);
 router.get('/fetchcontract', authMiddleware, tradeController.fetchcontract);
