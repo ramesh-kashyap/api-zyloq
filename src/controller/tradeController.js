@@ -350,15 +350,24 @@ const tradecount = async (req, res) => {
 
 
 
-    //      const fetchcontract = async (res, req) ={
-    //        try{
+         const fetchcontract = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "Not Authorised" });
+    }
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User Not Found" });
+    }
+    const fetchcontract = await Contract.findAll({where:{user_id: userId}});
+    return res.status(200).json({ success: true, fetchcontract: fetchcontract});
 
-    //        }
-    //        catch (err){
-    //             return res.status(200).json({
-    //   success: false,
-    //   message: err.message
-    // });
-    //        }
-    //      }
-module.exports = { tradeOnJson,stopTrade, tradecount};
+  } catch (err) {
+    return res.status(200).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+module.exports = { tradeOnJson,stopTrade, tradecount, fetchcontract};

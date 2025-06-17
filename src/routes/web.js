@@ -67,7 +67,7 @@ router.post('/txnPassword',  UserController.ChangePassword);
 
 router.post('/sendnotice', authMiddleware, Helper.addNotification);
 router.get('/fetchnotice', authMiddleware, UserController.fetchnotice);
-// router.get('/fetchcontract', authMiddleware, tradeController,fetchcontract);
+router.get('/fetchcontract', authMiddleware, tradeController.fetchcontract);
 
 // router.post('/register', (req, res) => {
 //   res.json({ message: 'Welcome to regiset' });
