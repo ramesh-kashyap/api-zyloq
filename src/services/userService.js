@@ -134,16 +134,16 @@ async function sendEmail(email, subject, data) {
     try {
         // ✅ Create a transporter using cPanel SMTP
         const transporter = nodemailer.createTransport({
-            host: "mail.hypermesh.io", // Replace with your cPanel SMTP host
+            host: "mail.zyloq.app", // Replace with your cPanel SMTP host
             port: 465, // Use 465 for SSL, 587 for TLS
             secure: true, // true for 465, false for 587
             auth: {
-                user: "info@hypermesh.io", // Your email
-                pass: "Mayank036$", // Your email password
+                user: "info@zyloq.app", // Your email
+                pass: "]oKr7fXdaR4ERGa&", // Your email password
             },
         });
         const mailOptions = {
-            from: '"HyperMesh" <info@hypermesh.io>', // Replace with your email
+            from: '"Zylo Ai" <info@zyloq.app>', // Replace with your email
             to: email,
             subject: subject,
             html: `<p>Hi ${data.name},</p>

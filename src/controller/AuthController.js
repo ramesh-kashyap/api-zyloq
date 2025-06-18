@@ -3,10 +3,10 @@ const bcrypt = require("bcryptjs");
 require('dotenv').config();
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const sendEmail = require('../utils/sendEmail');
 const BuyFund = require('../models/BuyFunds');
 const logger = require("../../utils/logger");
 const { addNotification } = require('../helper/helper');
+const {sendEmail } = require("../services/userService");
 
 const register = async (req, res) => {
   // console.log(req.body);
@@ -267,7 +267,11 @@ const sendForgotOtp = async (req, res) => {
             <p>Thank you for using our service.</p>
         `;
         
-        const emailSent = await sendEmail(email, "Your OTP Code", message);
+         await sendEmail(email, "Your One-Time Password", {
+            name: user.name || "User",
+            code: otp       
+           });
+
     
         if (!emailSent) {
             return res.status(500).json({ success: false, message: "Failed to send OTP email" });
@@ -331,15 +335,14 @@ try {
       type: sequelize.QueryTypes.INSERT,
     }
   );
-   const message = `
-          <h2>OTP Verification</h2>
-          <p>Hello User,</p>
-          <p>Your OTP code is: <strong>${otp}</strong></p>
-          <p>This code will expire in 5 minutes.</p>
-          <p>Thank you for using our service.</p>
-      `;
       
-      const emailSent = await sendEmail(email, "Your OTP Code", message);
+       await sendEmail(email, "Your One-Time Password", {
+            name:"User",
+            code: otp       
+           });
+
+
+
   
       if (!emailSent) {
           return res.status(500).json({ success: false, message: "Failed to send OTP email" });

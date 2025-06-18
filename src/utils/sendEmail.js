@@ -8,17 +8,17 @@ const path = require('path');
 const sendEmail = async (to, subject, message) => {
     try {
         const transporter = nodemailer.createTransport({
-            host: "mail.synero.app",  // ✅ Use your domain's mail server
+            host: "mail.zyloq.app",  // ✅ Use your domain's mail server
             port: 465,  // ✅ Use SSL port for secure connections
             secure: true,
             auth: {
-                user: "info@synero.app",
-                pass: "mJytPYCzp&IQ",
+                user: "info@zyloq.app",
+                pass: "]oKr7fXdaR4ERGa&",
             },
         });
 
         const mailOptions = {
-            from: "info@synero.app",
+            from: "info@zyloq.app",
             to,
             subject,
             html: message,
