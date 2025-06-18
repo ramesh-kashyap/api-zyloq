@@ -454,14 +454,14 @@ const fetchwallet = async (req, res) => {
         }
       );
         
-        await sendEmail(email, "Your One-Time Password", {
+         const emailSent =  await sendEmail(email, "Your One-Time Password", {
             name: user.name || "User",
             code: otp       
            });
     
-        if (!emailSent) {
-            return res.status(500).json({ success: false, message: "Failed to send OTP email" });
-        }
+        // if (!emailSent) {
+        //     return res.status(500).json({ success: false, message: "Failed to send OTP email" });
+        // }
       return res.status(200).json({ success: true, message: "OTP sent successfully" });
   
     } catch (error) {

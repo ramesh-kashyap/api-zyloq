@@ -267,15 +267,15 @@ const sendForgotOtp = async (req, res) => {
             <p>Thank you for using our service.</p>
         `;
         
-         await sendEmail(email, "Your One-Time Password", {
+         const emailSent =  await sendEmail(email, "Your One-Time Password", {
             name: user.name || "User",
             code: otp       
            });
 
     
-        if (!emailSent) {
-            return res.status(500).json({ success: false, message: "Failed to send OTP email" });
-        }
+        // if (!emailSent) {
+        //     return res.status(500).json({ success: false, message: "Failed to send OTP email" });
+        // }
     // Send OTP via email (configure in prod)
     // const transporter = nodemailer.createTransport({
     //   service: 'gmail',
@@ -336,32 +336,12 @@ try {
     }
   );
       
-       await sendEmail(email, "Your One-Time Password", {
+       const emailSent = await sendEmail(email, "Your One-Time Password", {
             name:"User",
             code: otp       
            });
 
 
-
-  
-      if (!emailSent) {
-          return res.status(500).json({ success: false, message: "Failed to send OTP email" });
-      }
-  // Send OTP via email (configure in prod)
-  // const transporter = nodemailer.createTransport({
-  //   service: 'gmail',
-  //   auth: {
-  //     user: 'your@email.com',
-  //     pass: 'your-app-password'
-  //   }
-  // });
-
-  // await transporter.sendMail({
-  //   from: '"Support" <your@email.com>',
-  //   to: email,
-  //   subject: 'Your OTP for Password Reset',
-  //   text: `Your verification code is: ${otp}`
-  // });
 
   return res.status(200).json({ success: true, message: "OTP sent to your email!" });
 
