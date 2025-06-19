@@ -11,9 +11,9 @@ const {sendEmail } = require("../services/userService");
 const register = async (req, res) => {
   // console.log(req.body);
     try {
-        const { name, phone, email, password, sponsor, countryCode , verificationCode } = req.body;
+        const { name, email, password, sponsor, countryCode , verificationCode } = req.body;
         
-        if ( !name || !phone || !email || !password || !sponsor) {
+        if ( !name  || !email || !password || !sponsor) {
             return res.status(400).json({ error: "All fields are required!" });
         }
 
@@ -47,7 +47,7 @@ const register = async (req, res) => {
         }
   
         // Generate username & transaction password
-        const username = "SN"+Math.floor(100000 + Math.random() * 900000); 
+        const username = "ZY"+Math.floor(100000 + Math.random() * 900000); 
         const tpassword = Math.random().toString(36).substring(2, 8);
   
         // Hash passwords
@@ -67,7 +67,6 @@ const register = async (req, res) => {
         // Construct new user object
         const newUser = {
             name,
-            phone,
             email,
             username,
             password: hashedPassword,
@@ -100,7 +99,7 @@ return res.status(201).json({ message: "User registered successfully!", username
   const registerbonus = async (createdUser) => {
     console.log(createdUser);
   try {
-    const bonusAmount = 200;
+    const bonusAmount = 3;
     const invoice = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
     const txnId = 'BONUS-' + Date.now();
     const now = new Date();
@@ -112,7 +111,7 @@ return res.status(201).json({ message: "User registered successfully!", username
       user_id_fk: createdUser.username,
       remarks:"registration_bonus",
       amount: bonusAmount,
-      // type: 'registration_bonus',
+      type: 'registration_bonus',
       status: 'Approved',
       bdate: now,
     });

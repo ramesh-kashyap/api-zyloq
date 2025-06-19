@@ -162,30 +162,24 @@ const getTeam = async (req, res) => {
         const genTeam1 = myLevelTeamCount[1] || [];
         const genTeam2 = myLevelTeamCount[2] || [];
         const genTeam3 = myLevelTeamCount[3] || [];
-        const genTeam4 = myLevelTeamCount[4] || [];
-        const genTeam5 = myLevelTeamCount[5] || [];
-
-
+    
         const notes = await User.findAll({
             where: { id: ids.length ? { [Op.in]: ids } : null },
             order: [['id', 'DESC']]
         });
 
-        const [team1, team2, team3, team4, team5] = await Promise.all([
+        const [team1, team2, team3] = await Promise.all([
             getUsersByIds(genTeam1),
             getUsersByIds(genTeam2),
             getUsersByIds(genTeam3),
-            getUsersByIds(genTeam4),
-            getUsersByIds(genTeam5),
+     
 
         ]);
 
-        const [team1Stats, team2Stats, team3Stats, team4Stats, team5Stats] = await Promise.all([
+        const [team1Stats, team2Stats, team3Stats] = await Promise.all([
             getTeamStats(team1),
             getTeamStats(team2),
             getTeamStats(team3),
-            getTeamStats(team4),
-            getTeamStats(team5),
 
         ]);
 
@@ -206,26 +200,18 @@ const getTeam = async (req, res) => {
             gen_team1Earning: teamEarnings.gen_team1Earning,
             gen_team2Earning: teamEarnings.gen_team2Earning,
             gen_team3Earning: teamEarnings.gen_team3Earning,
-            gen_team4Earning: teamEarnings.gen_team4Earning,
-            gen_team5Earning: teamEarnings.gen_team5Earning,
             gen_team2Recharge: team2Stats.recharge,
             gen_team2Withdraw: team2Stats.withdraw,
             gen_team3Recharge: team3Stats.recharge,
             gen_team3Withdraw: team3Stats.withdraw,
-            gen_team4Recharge: team4Stats.recharge,
-            gen_team4Withdraw: team4Stats.withdraw,
-            gen_team5Recharge: team5Stats.recharge,
-            gen_team5Withdraw: team5Stats.withdraw,
+        
             gen_team1total: team1.length,
             active_gen_team1total: team1.filter(u => u.active_status === 'Active').length,
             gen_team2total: team2.length,
             active_gen_team2total: team2.filter(u => u.active_status === 'Active').length,
             gen_team3total: team3.length,
             active_gen_team3total: team3.filter(u => u.active_status === 'Active').length,
-            gen_team4total: team4.length,
-            active_gen_team4total: team5.filter(u => u.active_status === 'Active').length,
-            gen_team5total: team5.length,
-            active_gen_team5total: team5.filter(u => u.active_status === 'Active').length,
+
             todaysUser: notes.filter(u => u.jdate === new Date().toISOString().split('T')[0]).length,
             totalTeam: notes.length,
             ActivetotalTeam: notes.filter(u => u.active_status === 'Active').length,
@@ -258,12 +244,20 @@ const getTeamRecord = async (req, res) => {
             return res.status(200).json({ error: "Unauthorized: User not found" });
         }
 
-        const totalDirect = await User.count({ where: { id: user.sponsor } });
-        const totalActive = await User.count({ where: { id: user.sponsor, active_status: "Active" } });
+        const ids = await myLevelTeam(userId);
+        
+
+         const notes = await User.findAll({
+            where: { id: ids.length ? { [Op.in]: ids } : null },
+            order: [['id', 'DESC']]
+        });
+
+        const totalDirect = notes.length;
+        const totalActive = notes.filter(u => u.active_status === 'Active').length;
         const response = {
             totalDirect: totalDirect,
             totalActive: totalActive,
-            totalLevelIncome: await Income.sum('comm', { where: { user_id: userId, remarks: 'Team Commission' } }),
+            totalLevelIncome: await Income.sum('comm', { where: { user_id: userId, remarks: 'Team Commission' } }) || 0,
         };
         res.status(200).json({
             message: 'Fetch successfully',

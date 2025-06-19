@@ -9,13 +9,13 @@ const User = sequelize.define('User', {
     sponsor: { type: DataTypes.INTEGER, allowNull: true }, // Parent user (sponsor)
     active_status: { type: DataTypes.ENUM('Active', 'Pending'), defaultValue: 'Pending' },
     jdate: { type: DataTypes.DATEONLY },
-    adate: { type: DataTypes.DATEONLY , allowNull: true },
-    detail_changed_date: { type: DataTypes.DATEONLY , allowNull: true },
+    adate: { type: DataTypes.DATE , allowNull: true },
+    detail_changed_date: { type: DataTypes.DATE , allowNull: true },
     dialCode: { type: DataTypes.STRING, allowNull: true },
-    // date_of_birth: {
-    //     type: DataTypes.DATEONLY,
-    //     allowNull: true
-    // },  
+    last_trade: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },  
     
     email: {
         type: DataTypes.STRING,

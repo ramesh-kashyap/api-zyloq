@@ -12,7 +12,7 @@ const {
 } = require('../models');
 
 const { Op } = require('sequelize');
-const { getVip,getBalance,addLevelIncome,getPercentage} = require("../services/userService");
+const { getVip,getBalance,addLevelIncome,getQuantifition} = require("../services/userService");
 
 
 
@@ -35,6 +35,9 @@ const get_vip = async (req, res) => {
     }
   };
 
+
+
+  
 
 
 async function coinrates() {
@@ -177,21 +180,8 @@ const tradeOnJson = async (req, res) => {
       });
     }
 
-    // 2️⃣ Build your 3-gen team counts
-    const levels      = await myLevelTeamCount(user.id);
-    const gen1Active  = (levels[1] || []).length; // or filter by active_status
-    const gen2Active  = (levels[2] || []).length;
-    const gen3Active  = (levels[3] || []).length;
-    const totalTeam   = gen2Active + gen3Active;
-
-    // 3️⃣ Compute balances & directs
-    const userDirect = await User.count({
-      where: {
-        sponsor: user.id,
-        active_status: 'Active',
-        package: { [Op.gte]: 50 }
-      }
-    });
+  
+  
     const balance   = await getBalance(user.id);
     // console.log('balance'+balance);
 
@@ -203,9 +193,14 @@ const tradeOnJson = async (req, res) => {
       });
     }
 
+      // 8️⃣ Choose machine tier
+    let uStr = balance;
+    
+    let idx =await getVip(user.id);
+    
     // 4️⃣ Determine allowed trades today
-    let quantifiable = 6;
-
+     const quantifiable = await getQuantifition(idx);
+    
 
    const todayCount = await Contract.count({
         where: {
@@ -234,7 +229,10 @@ const tradeOnJson = async (req, res) => {
     const perTrade    = remaining / quantifiable;
     const tradesLeft  = quantifiable - (todayCount + 1);
     const updateAmt   = perTrade * tradesLeft;
-    await user.update({ tradeAmt: updateAmt });
+       await User.update(
+        { tradeAmt: updateAmt },
+        { where: { id: user.id } }
+      );
 
     // 6️⃣ Fetch & bump factor index
     let vars     = await Variable.findOne({ where: { v_id: 11 } });
@@ -250,17 +248,7 @@ const tradeOnJson = async (req, res) => {
     const prices = await coinrates();
     if (prices.error) throw new Error(prices.error);
 
-    // 8️⃣ Choose machine tier
-    let uStr = balance;
-
-    console.log('balance'+uStr);
-    
-    let idx = 0;
-    if (uStr >= 30) idx = 1;
-    if (uStr>=500  && gen1Active>=3  && totalTeam>=6)   idx = 2;
-    if (uStr>=2000 && gen1Active>=10  && totalTeam>=24)  idx = 3;
-    if (uStr>=5000 && gen1Active>=15 && totalTeam>=48)  idx = 4;
-
+  
     // 9️⃣ Decide Buy vs Sell
     const zeroArr = ["eth","doge","btc","btc","bnb","btc","eth","eth","btc","btc","bnb","btc","eth","btc","eth","car"];
     const vIndex  = vars.v_index;
@@ -288,14 +276,21 @@ const tradeOnJson = async (req, res) => {
     const qty     = usdPool / (trade==='Buy' ? buyBtc : sellBtc);
     let   profit  = usdPool * pct;
     const refPool = uStr * 0.3 * pct;
-    const nowTS   = moment().format('YYYY-MM-DD HH:mm:ss');
-
+    const nowTS = moment().tz('Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
     // cap final-trade ROI
+
+ 
+    
     if (todayCount === quantifiable - 1) {
       const maxRoi = (balance - todaySum) * (bot.m_return/100);
       const extra  = maxRoi - (todaySum + profit);
       profit += extra;
-      await user.update({ last_trade: nowTS });
+
+      
+      await User.update(
+        { last_trade: nowTS },
+        { where: { id: user.id } }
+      );
     }
 
     // 1️⃣1️⃣ Insert the trade
@@ -372,6 +367,8 @@ const tradecount = async (req, res) => {
     if (!user) {
       return res.status(200).json({ success: false, message: "User Not Found" });
     }
+     const vip = await getVip(userId);     
+   const trade = await getQuantifition(vip);
     const startOfDay = moment().startOf('day').toDate();
     const endOfDay = moment().endOf('day').toDate();
     const tradeCount = await Contract.count({
@@ -382,7 +379,7 @@ const tradecount = async (req, res) => {
         }
       }
     });
-    return res.status(200).json({ success: true, count: tradeCount });
+    return res.status(200).json({ success: true, count: tradeCount,trade:trade , last_trade :user.last_trade  });
 
   } catch (err) {
     return res.status(200).json({

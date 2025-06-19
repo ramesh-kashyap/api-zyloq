@@ -6,8 +6,8 @@ const Machine = sequelize.define(
   {
     m_id:     { type: DataTypes.INTEGER, primaryKey: true },
     m_name:   { type: DataTypes.STRING,  allowNull: false },
-    m_return: { type: DataTypes.DECIMAL(10,4), allowNull: false }
-    // today_reward: { type: DataTypes.FLOAT, allowNull: true },
+    m_return: { type: DataTypes.DECIMAL(10,4), allowNull: false },
+    trade: { type: DataTypes.INET, allowNull: true },
   },
   {
     tableName: "machines",

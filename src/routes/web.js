@@ -48,6 +48,11 @@ router.post('/changePassword', authMiddleware, UserController.ChangePassword);
 router.post('/changePassword', authMiddleware, UserController.ChangePassword);
 router.get('/fetchservers', authMiddleware, UserController.fetchservers);
 router.post('/changedetails', authMiddleware, UserController.changedetails);
+router.get('/checkusers', authMiddleware, UserController.checkUsers);
+router.post('/claimTask', authMiddleware, UserController.claimTask);
+router.get('/checkClaimed', authMiddleware,UserController.checkClaimed);
+router.get('/vipterms', authMiddleware, UserController.vipTerms);
+router.post('/claimVip', authMiddleware, UserController.ClaimVip);
 
 router.get('/getUserHistory', authMiddleware, transactionController.getUserHistory);
 

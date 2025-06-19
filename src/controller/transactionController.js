@@ -36,7 +36,7 @@ const getUserHistory = async (req, res) => {
     let merged = [
       ...investmentHistory.map(item => ({ ...item.toJSON(), type: 'investment', remarks: 'Deposits' })),
       ...incomeHistory.map(item => ({ ...item.toJSON(), type: 'income', remarks: item.remarks})),
-      ...buyfunds.map(item => ({ ...item.toJSON(), type: 'buyfund', remarks: 'Buy Fund' })),
+      ...buyfunds.map(item => ({ ...item.toJSON(), type: 'buyfund', remarks: 'Registration Bonus' })),
       ...withdrawHistory.map(item => ({ ...item.toJSON(), type: 'withdraw', remarks: 'Withdrawal' })),
     ];
 

@@ -16,6 +16,7 @@ const { addNotification } = require('../helper/helper');
 const { getBalance ,sendEmail } = require("../services/userService");
 const moment = require('moment');
 const { Op } = require('sequelize');
+const logger = require("../../utils/logger");
 
 const available_balance = async (req, res) => {
     try {
@@ -221,9 +222,9 @@ const fetchwallet = async (req, res) => {
        const  refid = user.username;
        const currency = req.query.type || 'bep20'; // default to bep20
        const address = currency === 'trc20'
-      ? 'TGTRqfnXnt5Gtq3tvXt2Z2qyCABUXjDVxn'
-      : '0xb0074cA94ecdb2AF8b6B89E86225F4A65A060bCf';
-      const apiUrl = `https://api.cryptapi.io/${currency}/usdt/create/?callback=https://api.synero.app/api/auth/dynamic-upi-callback?refid=${refid}&address=${address}&pending=0&confirmations=1&email=rameshkashyap8801@gmail.com&post=0&priority=default&multi_token=0&multi_chain=0&convert=0`;
+      ? 'TC651dRArYMdv2rNhr3UPRbMX8Asgybyxb'
+      : '0xf8ae2909f2b9231e78c6ba683e8232c3939cac3a';
+      const apiUrl = `https://api.cryptapi.io/${currency}/usdt/create/?callback=https://api.zyloq.app/api/auth/dynamic-upi-callback?refid=${refid}&address=${address}&pending=0&confirmations=1&email=rameshkashyap8801@gmail.com&post=0&priority=default&multi_token=0&multi_chain=0&convert=0`;
 
       // Call the external API
       const response = await axios.get(apiUrl); 
@@ -247,74 +248,103 @@ const fetchwallet = async (req, res) => {
     }
   };
 
-  const dynamicUpiCallback = async (req, res) => {
-    try {
-      const queryData = req.query;
-      // console.log('Incoming callback data:', JSON.stringify(queryData));  
-      // Save raw JSON
-     
-  
-      const validAddresses = [
-        "0xb0074cA94ecdb2AF8b6B89E86225F4A65A060bCf",
-        "TGTRqfnXnt5Gtq3tvXt2Z2qyCABUXjDVxn"
-      ];  
-      if (
-        validAddresses.includes(queryData.address_out) &&
-        queryData.result === "sent" &&
-        ['bep20_usdt', 'trc20_usdt'].includes(queryData.coin)
-      ) {
-        const txnId = queryData.txid_in;
-        const userName = queryData.refid;
-  
-        const existingInvestment = await BuyFund.findOne({ where: { txn_no: txnId } });
-        if (!existingInvestment) {
-          // console.log(`Processing new transaction: ${txnId} for user: ${userName}`);
-  
-          const amount = parseFloat(queryData.value_coin).toFixed(2);
-          const blockchain = queryData.coin === 'bep20_usdt' ? 'USDT_BSC' : 'USDT_TRON';
-  
-          const user = await User.findOne({ where: { username: userName } });
-          if (!user) {
-            return res.json({
-              message: 'User not found',
-              status: false
-            });
-          }
-                
-          const now = new Date();
-          const invoice = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
-  
-          await BuyFund.create({
-            orderId: invoice,
-            txn_no: txnId,
-            user_id: user.id,
-            user_id_fk: user.username,
-            amount: amount,
-            type: blockchain,
-            status: 'Approved',
-            bdate: now,
-          });
-  
-          // ✅ Update usdtBalance in users table
-          const newBalance = parseFloat(user.userbalance || 0) + parseFloat(amount);
-          await user.update({ userbalance: newBalance });
-        }
-      }
-  
-      return res.json({
-        message: 'Callback processed',
-        status: true
-      });
-    } catch (err) {
-      console.error('UPI Callback Error:', err.message);
-      return res.json({
-        message: 'Failed',
-        status: false
-      });
-    }
-  };
+ const dynamicUpiCallback = async (req, res) => {
+  try {
+    const response = JSON.stringify(req.query); // raw JSON
+    const queryData = req.query;
+   logger.info('Incoming callback data: ' + JSON.stringify(queryData));
+    // Log the raw data
+    await Activity.create({ data: response });
+    if(
+      (
+        queryData.address_out === "0xf8ae2909f2b9231e78c6ba683e8232c3939cac3a" ||
+        queryData.address_out === "TC651dRArYMdv2rNhr3UPRbMX8Asgybyxb"
+      ) &&
+      queryData.result === "sent" &&
+      (
+        queryData.coin === 'bep20_usdt' ||
+        queryData.coin === 'trc20_usdt'
+      )
+    ){
 
- 
+      let txnId = queryData.txid_in; 
+      const checkExits = await Investment.findOne({ where: { transaction_id:txnId } });
+     let userName = queryData.refid;
+      if (!checkExits) 
+        {
+            
+             logger.info(`Processing new transaction: ${txnId} for user: ${userName}`);
+        let amount = parseFloat(queryData.value_coin).toFixed(2);  
+        let blockchain = queryData.coin === 'bep20_usdt' ? 'USDT_BSC': queryData.coin === 'trc20_usdt' ? 'USDT_TRON' : '';
+   
+        const user = await User.findOne({ where: { username:userName } });
+        // insert investment
+
+        const now = new Date();
+        const invoice = Math.floor(1000000 + Math.random() * 9000000).toString();
+        // Insert into database using Sequelize
+        await Investment.create({
+          plan: 1,
+          orderId: invoice,
+          transaction_id: txnId,
+          user_id: user.id,
+          user_id_fk: user.username,
+          amount: amount,
+          payment_mode: blockchain,
+          status: "Active",
+          sdate: now,
+          active_from: user.username,
+          created_at:now,
+        });
+    
+
+       if (user) {
+        const updatedData = {};
+        const currentTime =new Date();
+
+       const newBalance = parseFloat(user.userbalance) + parseFloat(amount);
+       const newPackage = parseFloat(user.package) + parseFloat(amount);
+
+        if (user.active_status === 'Pending') {
+          updatedData.active_status = 'Active';
+          updatedData.adate = currentTime;
+          updatedData.package = amount;
+          updatedData.userbalance = newBalance;
+        } else {
+          updatedData.active_status = 'Active';
+          updatedData.package = newPackage;
+          updatedData.userbalance = newBalance;
+        }
+       logger.info(`updatedData: ${updatedData} for user: ${userName}`);
+        await User.update(updatedData, { where: { id: user.id } });
+        
+        
+      }
+
+
+   }
+
+
+     }
+
+
+     return res.status(200).json({
+      message: "Callback processed",
+      status: true
+  });
+
+  } catch (error) {
+    console.log('UPI Callback Error:', error);
+    logger.error('UPI Callback Error: ' + error.stack);
+    return res.status(200).json({
+      message: "Failed",
+      status: false
+  });
+
+  }
+};
+
+
     
   const withfatch = async (req, res) => { 
     try {
@@ -1585,4 +1615,140 @@ const qualityLevelTeam = async (userId, level = 3) => {
   };
 
 
-module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo};
+
+    const checkUsers = async (req, res) => {
+    try{
+          const userId = req.user?.id;
+      if (!userId) {
+        return res.status(200).json({success: false, message: "User not authenticated!" });
+      } ;
+      const user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+         return res.status(200).json({success: false, message: "User not Found"});
+      }
+      const countSponor =  await User.count({where: {sponsor: userId}});
+ 
+      // const countSponsor = await User.count({ where: {sponsor: userId, package: {[Op.gte]: 100}}});
+     
+      return res.status(200).json({ success: true, countSponor });
+    }
+    catch (error) {
+      console.error("Something went wrong:", error);
+      return res.status(200).json({success: false, message: "Internal Server Error" });
+    }
+ 
+  }
+ 
+   const claimTask = async (req, res) => {
+  try {
+    const { taskReward } = req.body;  // ✅ Destructure properly
+ 
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "User not authenticated!" });
+    }
+ 
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found!" });
+    }
+ 
+    // ✅ Correct usage of Income.create
+    const taskIncome = await Income.create({
+      user_id: userId,
+      comm: taskReward,
+      remarks: "Task Income"
+    });
+ 
+    return res.status(200).json({ success: true, taskIncome });
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+ 
+ 
+  const checkClaimed = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "User not authenticated!" });
+    }
+ 
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not Found" });
+    }
+ 
+    const taskIncome = await Income.findAll({
+      where: {
+        user_id: userId,
+        remarks: "Task Income"
+      },
+      attributes: ['id', 'comm', 'remarks', 'created_at'], // Only return needed fields
+      order: [['created_at', 'DESC']] // Optional: most recent first
+    });
+ 
+    return res.status(200).json({ success: true, claimed: taskIncome });
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+ 
+        const ClaimVip = async (req, res) => {
+         try {
+           const { VipReward } = req.body;  // ✅ Destructure properly
+           const userId = req.user?.id;
+         if (!userId) {
+           return res.status(401).json({ success: false, message: "User not authenticated!" });
+         }
+ 
+          const user = await User.findOne({ where: { id: userId } });
+          if (!user) {
+             return res.status(404).json({ success: false, message: "User not found!" });
+             }
+ 
+          // ✅ Correct usage of Income.create
+          const taskIncome = await Income.create({
+            user_id: userId,
+            comm: VipReward,
+            remarks: "VIP Income"
+          });
+      
+    return res.status(200).json({ success: true, taskIncome });
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+ 
+    const vipTerms = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(200).json({ success: false, message: "User not authenticated!" });
+    }
+ 
+    const user = await User.findOne({ where: { id: userId } });
+    if (!user) {
+      return res.status(200).json({ success: false, message: "User not Found" });
+    }
+ 
+    const taskIncome = await Income.findAll({
+      where: {
+        user_id: userId,
+        remarks: "VIP Income"
+      },
+      attributes: ['id', 'comm', 'remarks', 'created_at'], // Only return needed fields
+      order: [['created_at', 'DESC']] // Optional: most recent first
+    });
+ 
+    return res.status(200).json({ success: true, claimed: taskIncome });
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+module.exports = { levelTeam, direcTeam ,fetchwallet, dynamicUpiCallback, changedetails,available_balance, withfatch, withreq, sendotp,processWithdrawal, fetchserver, submitserver, getAvailableBalance, fetchrenew, renewserver, fetchservers, sendtrade, runingtrade, serverc, tradeinc ,InvestHistory, withdrawHistory, ChangePassword,saveWalletAddress,getUserDetails,PaymentPassword,totalRef, quality, fetchvip, myqualityTeam, fetchnotice,incomeInfo,checkUsers,claimTask,checkClaimed,ClaimVip,vipTerms};

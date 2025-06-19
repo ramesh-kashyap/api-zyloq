@@ -1,6 +1,7 @@
-const { User, Investment,Income,Withdraw} = require("../models"); // Adjust path as needed
+const { User, Investment,Income,Withdraw,Machine} = require("../models"); // Adjust path as needed
 const { Op } = require("sequelize"); // ✅ Import Sequelize Operators
 const nodemailer = require("nodemailer");
+const BuyFund = require("../models/BuyFunds");
 
 // Get user's VIP level
 
@@ -85,13 +86,16 @@ async function getBalance(userId) {
     if (!user) return 0;
 
     // 1) grab the raw sums (could be null)
-    const [ totalCommissionRaw, investmentRaw, totalWithdrawRaw ] = 
+    const [ totalCommissionRaw, investmentRaw, RegisterBonus, totalWithdrawRaw ] = 
       await Promise.all([
         Income.sum('comm', {
           where: { user_id: userId }
         }),
         Investment.sum('amount', {
           where: { user_id: userId, status: 'Active' }
+        }),
+         BuyFund.sum('amount', {
+          where: { user_id: userId, status: 'Approved' }
         }),
         Withdraw.sum('amount', {
           where: {
@@ -104,10 +108,11 @@ async function getBalance(userId) {
     // 2) coerce to Number, defaulting null/undefined → 0
     const totalCommission = Number(totalCommissionRaw  ?? 0);
     const investment     = Number(investmentRaw      ?? 0);
+    const RegisterBnus     = Number(RegisterBonus      ?? 0);
     const totalWithdraw  = Number(totalWithdrawRaw  ?? 0);
 
     // 3) Now the math will never be NaN
-    const totalBalance = totalCommission + investment - totalWithdraw;
+    const totalBalance = (totalCommission + investment +RegisterBnus) - totalWithdraw;
 
     // console.log("Balance:", totalBalance);
     return totalBalance.toFixed(3);
@@ -125,6 +130,17 @@ async function getPercentage(vipLevel) {
         return user.m_return || 0;
     } catch (error) {
         console.error("Error in getBalance:", error);
+        return 0;
+    }
+}
+
+
+async function getQuantifition(vipLevel) {
+    try {
+        const user = await Machine.findOne({ where: { m_id: vipLevel } });
+        return user.trade || 0;
+    } catch (error) {
+        // console.error("Error fetching quantification:", error);
         return 0;
     }
 }
@@ -236,4 +252,4 @@ async function addLevelIncome(userId, amount) {
 }
 
 
-module.exports = { getVip, myLevelTeamCount, getBalance,getPercentage,addLevelIncome,sendEmail };
+module.exports = { getVip, myLevelTeamCount, getBalance,getPercentage,addLevelIncome,sendEmail ,getQuantifition};
